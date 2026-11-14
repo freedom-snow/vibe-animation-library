@@ -79,3 +79,21 @@
 
 > 清点完记得核对：**工程里对库路径的实际引用是不是 0 次**。
 > 那个 0 次正是 `library-bridge` 存在的理由。
+
+---
+
+## 7 · 真 3D 渲染管线（`3d/`）
+
+与上面四支 Canvas 2D 伪 3D 元件**并列的另一类资产**：真 3D 离线渲染。
+
+| 项 | 内容 |
+|---|---|
+| 技术 | Three.js + 无头 Chrome（puppeteer-core）+ ffmpeg |
+| 两种模式 | A 软件 SwiftShader（1.45 帧/秒）/ B 硬件 GPU（`RENDER_GL=gpu`） |
+| 提速取图 | `CAPTURE=jpeg`（canvas.toDataURL，约 2~5 倍） |
+| 文件 | `scene.html` / `render.mjs` / `encode.mjs` / `package.json` / `run-render.ps1` |
+| 脱敏 | 原 `F:/workbuddy_pro/...` 绝对路径已全部改为相对路径 + 环境变量 |
+| 详细 | [`references/3D渲染方案.md`](references/3D渲染方案.md) |
+
+> 伪 3D 元件 = "平面上的东西看起来立体"；真 3D 管线 = "真的有个三维物体在转"。
+> 两者按「准入三问」择一，不互相替代。
