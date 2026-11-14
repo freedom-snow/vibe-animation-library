@@ -5,6 +5,8 @@
 >
 > A publishable mirror of four reusable, deterministic Canvas/JS animation primitives.
 
+**中文定位**：Vibe 动画库 —— 一套 Canvas 2D 伪 3D 确定性动画元件（火柴人/深度层/表情/肢体），并附带 Three.js + SwiftShader 真 3D 渲染管线。适用于 **AI 动画 · 伪 3D · 三维渲染 · 定格动画 · 创意编程**。OpenFilm 产线资产，MIT 许可。
+
 [![status](https://img.shields.io/badge/status-v0.1%20open-orange)](#迭代)
 [![primitives](https://img.shields.io/badge/primitives-4-blue)](#四个元件)
 [![license](https://img.shields.io/badge/license-MIT-green)](#许可)
