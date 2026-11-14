@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<title>Three Headless Render</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #05060a; overflow: hidden; }
+  #c { display: block; width: 1280px; height: 720px; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "http://127.0.0.1:8731/three/build/three.module.js",
+    "three/addons/": "http://127.0.0.1:8731/three/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<canvas id="c" width="1280" height="720"></canvas>
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const W = 1280, H = 720;
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.setPixelRatio(1);
+renderer.setSize(W, H, false);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x05060a);
+scene.fog = new THREE.FogExp2(0x05060a, 0.10);
+
+const camera = new THREE.PerspectiveCamera(55, W / H, 0.1, 100);
+
+// 灯光
+scene.add(new THREE.AmbientLight(0x223355, 0.6));
+const p1 = new THREE.PointLight(0x44ccff, 60, 60); p1.position.set(5, 5, 5); scene.add(p1);
+const p2 = new THREE.PointLight(0xff44aa, 60, 60); p2.position.set(-5, -3, 4); scene.add(p2);
+
+// 核心多面体（实心 + 线框外衣）
+const coreMat = new THREE.MeshStandardMaterial({ color: 0x111133, emissive: 0x3366ff, emissiveIntensity: 1.1, metalness: 0.6, roughness: 0.25, flatShading: true });
+const core = new THREE.Mesh(new THREE.IcosahedronGeometry(1.1, 1), coreMat); scene.add(core);
+const wireMat = new THREE.MeshBasicMaterial({ color: 0x66ffff, wireframe: true, transparent: true, opacity: 0.5 });
+const wire = new THREE.Mesh(new THREE.IcosahedronGeometry(1.4, 1), wireMat); scene.add(wire);
+
+// 粒子星云
+const N = 4000;
+const pos = new Float32Array(N * 3);
+const col = new Float32Array(N * 3);
+for (let i = 0; i < N; i++) {
+  const r = 1.8 + Math.random() * 3.4;
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(2 * Math.random() - 1);
+  pos[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
+  pos[i * 3 + 1] = r * Math.cos(phi) * 0.7;
+  pos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+  const c = new THREE.Color().setHSL(0.55 + Math.random() * 0.18, 0.85, 0.6);
+  col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+}
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+pGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+const pMat = new THREE.PointsMaterial({ size: 0.05, vertexColors: true, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
+const points = new THREE.Points(pGeo, pMat); scene.add(points);
+
+// 环绕卫星体
+const sats = [];
+const sGeo = [new THREE.TorusGeometry(0.3, 0.12, 16, 40), new THREE.OctahedronGeometry(0.4), new THREE.TorusKnotGeometry(0.25, 0.08, 80, 12)];
+for (let i = 0; i < 7; i++) {
+  const m = new THREE.Mesh(sGeo[i % sGeo.length], new THREE.MeshStandardMaterial({ color: 0x222244, emissive: 0xff66cc, emissiveIntensity: 1.0, metalness: 0.5, roughness: 0.3 }));
+  const a = Math.random() * Math.PI * 2, rr = 2.4 + Math.random() * 1.4;
+  m.userData = { a, rr, y: (Math.random() - 0.5) * 2 };
+  scene.add(m); sats.push(m);
+}
+
+// 后处理：辉光
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(W, H), 0.85, 0.6, 0.32);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+function setFrame(t) {
+  core.rotation.y = t * Math.PI * 3;
+  core.rotation.x = Math.sin(t * Math.PI * 2) * 0.4;
+  const s = 1 + 0.12 * Math.sin(t * Math.PI * 6);
+  core.scale.setScalar(s); wire.scale.setScalar(s);
+  wire.rotation.y = -t * Math.PI * 2; wire.rotation.z = t * Math.PI;
+  points.rotation.y = t * Math.PI * 2;
+
+  // 颜色旅程：青 -> 品红 -> 金
+  const hue = (0.55 + 0.35 * t) % 1;
+  coreMat.emissive.setHSL(hue, 0.8, 0.5);
+  wireMat.color.setHSL((hue + 0.1) % 1, 0.9, 0.6);
+  p1.color.setHSL(hue % 1, 0.9, 0.5);
+  p2.color.setHSL((hue + 0.5) % 1, 0.9, 0.5);
+
+  // 相机环绕
+  const ang = t * Math.PI * 2;
+  camera.position.set(Math.cos(ang) * 6, Math.sin(t * Math.PI) * 1.6, Math.sin(ang) * 6);
+  camera.lookAt(0, 0, 0);
+
+  for (const m of sats) {
+    m.userData.a += 0.02;
+    m.position.set(
+      Math.cos(m.userData.a) * m.userData.rr,
+      m.userData.y + Math.sin(t * Math.PI * 4 + m.userData.a) * 0.4,
+      Math.sin(m.userData.a) * m.userData.rr
+    );
+    m.rotation.x += 0.05; m.rotation.y += 0.04;
+  }
+  composer.render();
+}
+
+// 暴露给无头脚本驱动的逐帧渲染接口
+window.__render = (i, total) => {
+  const t = total > 1 ? i / (total - 1) : 0;
+  setFrame(t);
+  return true;
+};
+
+// 首帧（也支持 ?frame=&total= 直渲）
+const q = new URLSearchParams(location.search);
+const total0 = parseInt(q.get('total') || '90', 10);
+const frame0 = parseInt(q.get('frame') || '0', 10);
+window.__ready = true;
+window.__render(frame0, total0);
+</script>
+</body>
+</html>
