@@ -1,0 +1,20 @@
+# 本地运行产物
+node_modules/
+__pycache__/
+*.py[cod]
+.film/
+_render/
+*.log
+
+# 第三方依赖（刻意不进仓库，按需自行引入）
+assets/gsap.min.js
+
+# OS / 编辑器
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# 本地备份
+*_vN_backup.*
