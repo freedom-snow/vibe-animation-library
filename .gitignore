@@ -18,3 +18,8 @@ Thumbs.db
 
 # 本地备份
 *_vN_backup.*
+
+# 3d/ 运行产物（渲染输出，不进仓库）
+3d/frames/
+3d/out/
+3d/node_modules/
