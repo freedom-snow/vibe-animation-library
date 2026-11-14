@@ -37,6 +37,20 @@
 
 完整索引（含未镜像的库与选型表）见 [INVENTORY.md](INVENTORY.md)。
 
+## 3D 渲染管线（真 3D）
+
+除上面的 Canvas 2D 伪 3D 元件外，本仓库另收一套 **Three.js 无头渲染管线**
+（目录 [`3d/`](3d/)），用于把**真 3D** 场景离线渲成视频：
+
+- 方案 A · **SwiftShader 软件渲染**（本机无 GPU 加速时的主路径）：`--enable-unsafe-swiftshader`，约 **1.45 帧/秒**（1080×1920）。
+- 方案 B · **硬件 GPU 加速**：`RENDER_GL=gpu`，速度数倍提升；或改用 `CAPTURE=jpeg` 取图提速约 2~5 倍。
+
+两种模式是同一套管线（`render.mjs` + `scene.html`）切 Chrome GL 参数，
+实测速度、运行步骤、与伪 3D 元件的区别，见
+[`references/3D渲染方案.md`](references/3D渲染方案.md)。
+
+> 一句话分工：**伪 3D 元件解决"平面上的东西看起来立体"，真 3D 管线解决"真的有个三维物体在转"**，按「准入三问」择一。
+
 ## 快速开始
 
 ```html
@@ -91,8 +105,15 @@ vibe-animation-library/
 ├── .gitignore
 ├── references/
 │   ├── 造法层_2D伪3D.md          ← D2.* 八族造法摘要
-│   └── 读序与自包含.md           ← 怎么读、依赖什么、怎么接
-└── assets/                      ← 四个可调用元件
+│   ├── 读序与自包含.md           ← 怎么读、依赖什么、怎么接
+│   └── 3D渲染方案.md             ← Three.js 无头渲染：软件/硬件两模式与速度实测
+├── assets/                      ← 四个可调用 Canvas 2D 假 3D 元件
+└── 3d/                          ← 真 3D 渲染管线（Three.js 无头抽帧）
+    ├── scene.html               ← Three.js 场景，暴露 window.__render(i,total)
+    ├── render.mjs               ← 无头抽帧
+    ├── encode.mjs               ← 帧序列 → MP4
+    ├── package.json
+    └── run-render.ps1
 ```
 
 ## 迭代
